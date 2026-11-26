@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+from pathlib import Path
 
 
 def find_terraform():
@@ -9,7 +10,7 @@ def find_terraform():
     return shutil.which("terraform")
 
 
-def run_terraform(args):
+def run_terraform(args, working_dir=None):
     """
     Run a Terraform command and return its result.
     """
@@ -21,7 +22,8 @@ def run_terraform(args):
     result = subprocess.run(
         [terraform_path] + args,
         capture_output=True,
-        text=True
+        text=True,
+        cwd=working_dir
     )
 
     if result.returncode == 0:
@@ -31,3 +33,32 @@ def run_terraform(args):
         print(result.stderr)
 
     return result
+
+
+def validate_terraform(project_dir):
+    """
+    Validate Terraform configuration files in a project folder.
+    """
+    project_path = Path(project_dir)
+
+    if not project_path.exists():
+        raise FileNotFoundError(
+            f"Project directory does not exist: {project_dir}"
+        )
+
+    if not project_path.is_dir():
+        raise NotADirectoryError(
+            f"Path is not a directory: {project_dir}"
+        )
+
+    terraform_files = list(project_path.glob("*.tf"))
+
+    if not terraform_files:
+        raise FileNotFoundError(
+            f"No Terraform (.tf) files found in project directory: {project_dir}"
+        )
+
+    return run_terraform(
+        ["validate", "-no-color"],
+        working_dir=project_path
+    )

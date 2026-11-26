@@ -1,6 +1,12 @@
+import shutil
+import subprocess
+from pathlib import Path
 import streamlit as st
-from infraforge.core.terraform_engine import find_terraform, run_terraform
-
+from infraforge.core.terraform_engine import (
+    find_terraform,
+    run_terraform,
+    validate_terraform
+)
 st.set_page_config(
     page_title="InfraForge",
     page_icon="⚒️",
@@ -37,12 +43,24 @@ if terraform_path:
 
 st.divider()
 
-st.header("Terraform Engine")
+st.divider()
 
-if st.button("Check Terraform Version"):
-    result = run_terraform(["version"])
+st.header("Configuration Validator")
 
-    if result.returncode == 0:
-        st.code(result.stdout)
-    else:
-        st.error(result.stderr)
+project_dir = st.text_input(
+    "Terraform Project Directory",
+    value="examples/first-project"
+)
+if st.button("Validate Terraform Project"):
+    try:
+        result = validate_terraform(project_dir)
+
+        if result.returncode == 0:
+            st.success("Terraform configuration is valid!")
+            st.text(result.stdout.strip())
+        else:
+            st.error("Terraform validation failed.")
+            st.text(result.stdout.strip() or result.stderr.strip())
+
+    except Exception as error:
+        st.error(str(error)) 
